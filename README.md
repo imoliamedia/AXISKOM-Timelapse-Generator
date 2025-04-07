@@ -2,7 +2,7 @@
 
 Een Windows-tool voor het eenvoudig maken van timelapse video's van foto's die zijn genomen met de ESP32-CAM.
 
-![AXISKOM Timelapse Demo]([https://github.com/imoliamedia/AXISKOM-Timelapse-Tool/raw/main/demo/timelapse-demo.jpg](https://github.com/imoliamedia/AXISKOM-Timelapse-Generator/blob/main/screenshots/4%20kwaliteit%20keuze.png))
+![AXISKOM Timelapse Demo](https://github.com/imoliamedia/AXISKOM-Timelapse-Generator/blob/main/screenshots/4.kwaliteit_keuze.png))
 
 [Screenshots](https://github.com/imoliamedia/AXISKOM-Timelapse-Generator/tree/main/screenshots)
 
