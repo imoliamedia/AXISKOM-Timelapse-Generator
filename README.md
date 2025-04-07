@@ -95,7 +95,7 @@ De tool maakt gebruik van:
 
 ## Licentie
 
-Dit project is gelicenseerd onder de [MIT License](LICENSE).
+Dit project is gelicenseerd onder de [GPL-3.0 license](LICENSE).
 
 ## Credits
 
