@@ -19,7 +19,6 @@ DIY-projecten waarbij visuele tijdsregistratie waardevol is
 ### Belangrijkste functies:
 
 - Eenvoudige GUI met duidelijke stappen
-- Ondersteuning voor het verwerken van foto's van één of meerdere dagen
 - Aanpasbare framerate voor controle over de snelheid van de timelapse
 - Kwaliteitsinstellingen om de bestandsgrootte te optimaliseren
 - Werkt met foto's gemaakt via de webinterface of van de SD-kaart
@@ -51,7 +50,7 @@ Je ESP32-CAM foto's kunnen op twee manieren worden verzameld:
 ### Het maken van een timelapse
 
 1. Dubbelklik op `maak_timelapse.bat`
-2. Kies "Maak timelapse van één dag" in het menu
+2. Kies "Maak timelapse" in het menu
 3. Selecteer de map met de foto's wanneer het dialoogvenster verschijnt
 4. Stel de framerate in (fps):
    - 30 fps: Vloeiende, maar korte timelapse

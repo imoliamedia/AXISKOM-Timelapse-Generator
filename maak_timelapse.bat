@@ -1,5 +1,6 @@
-:: maak_timelapse.bat - Hoofdscript voor het maken van timelapses
+:: Hoofdscript voor het maken van timelapses
 @echo off
+setlocal
 chcp 65001 > nul
 color 0A
 title AXISKOM Timelapse Maker
@@ -23,23 +24,21 @@ echo ╚════════════════════════
 echo.
 echo  Deze tool maakt een timelapse video van je foto's.
 echo.
-echo  [1] Maak timelapse van één dag
-echo  [2] Maak timelapse van meerdere dagen
-echo  [3] Help en uitleg
-echo  [4] Afsluiten
+echo  [1] Maak timelapse
+echo  [2] Help en uitleg
+echo  [3] Afsluiten
 echo.
-set /p keuze=Maak je keuze (1-4): 
+set /p keuze=Maak je keuze (1-3): 
 
 if "%keuze%"=="1" goto enkele_dag
-if "%keuze%"=="2" goto meerdere_dagen
-if "%keuze%"=="3" goto help
-if "%keuze%"=="4" exit /b
+if "%keuze%"=="2" goto help
+if "%keuze%"=="3" exit /b
 goto menu
 
 :enkele_dag
 cls
 echo ╔══════════════════════════════════════════════════════════╗
-echo ║                TIMELAPSE VAN ÉÉN DAG                     ║
+echo ║                TIMELAPSE MAKER                           ║
 echo ╚══════════════════════════════════════════════════════════╝
 echo.
 echo  STAP 1: Selecteer de map met foto's
@@ -200,47 +199,37 @@ if exist "%uitvoermap%\%mapnaam%_timelapse.mp4" (
     set /p open_bestand=Wil je de timelapse nu openen? (j/n): 
     if /i "%open_bestand%"=="j" (
       start "" "%uitvoermap%\%mapnaam%_timelapse.mp4"
+    ) else (
+      echo.
+      echo Timelapse niet geopend.
+      echo.
     )
+    
+    echo  Druk op een toets om terug te gaan naar het hoofdmenu...
+    pause > nul
+    goto menu
   ) else (
     goto error_handling
   )
 ) else (
-  :error_handling
-  echo.
-  echo ╔══════════════════════════════════════════════════════════╗
-  echo ║                      FOUT!                               ║
-  echo ╚══════════════════════════════════════════════════════════╝
-  echo.
-  echo  ✗ Er is helaas iets misgegaan bij het maken van de timelapse.
-  echo  Controleer of er foto's (*.jpg) in de geselecteerde map staan.
-  echo  Map: %volledig_pad%
-  echo.
+  goto error_handling
 )
+
+:error_handling
+echo.
+echo ╔══════════════════════════════════════════════════════════╗
+echo ║                      FOUT!                               ║
+echo ╚══════════════════════════════════════════════════════════╝
+echo.
+echo  ✗ Er is helaas iets misgegaan bij het maken van de timelapse.
+echo  Controleer of er foto's (*.jpg) in de geselecteerde map staan.
+echo  Map: %volledig_pad%
+echo.
 
 echo  Druk op een toets om terug te gaan naar het hoofdmenu...
 pause > nul
+echo Terug naar hoofdmenu...
 goto menu
-
-:meerdere_dagen
-cls
-echo ╔══════════════════════════════════════════════════════════╗
-echo ║              TIMELAPSE VAN MEERDERE DAGEN                ║
-echo ╚══════════════════════════════════════════════════════════╝
-echo.
-echo  Met deze functie kun je foto's uit verschillende mappen samenvoegen
-echo  tot één timelapse. Dit is handig als je een langere periode wilt tonen.
-echo.
-echo  STAP 1: Maak een nieuwe map met alle foto's die je wilt gebruiken
-echo  -------------------------------------------------------------
-echo  1. Maak een nieuwe map (bijvoorbeeld "mijn_timelapse")
-echo  2. Kopieer alle foto's van verschillende dagen naar deze ene map
-echo  3. Zorg dat de bestandsnamen op datum/tijd gesorteerd kunnen worden
-echo.
-echo  Zodra je klaar bent met het voorbereiden van je map, ga je verder.
-echo.
-pause
-
-goto enkele_dag
 
 :help
 cls
