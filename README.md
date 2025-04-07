@@ -26,7 +26,7 @@ DIY-projecten waarbij visuele tijdsregistratie waardevol is
 
 ## Installatie
 
-1. Download de laatste release van de [Releases pagina](https://github.com/imoliamedia/AXISKOM-Timelapse-Tool/releases)
+1. Download de laatste release van de [Releases pagina](https://github.com/imoliamedia/AXISKOM-Timelapse-Generator/releases/tag/Release)
 2. Pak het ZIP-bestand uit naar een locatie op je computer
 3. Zorg dat de mapstructuur intact blijft (de `ffmpeg` map moet op hetzelfde niveau staan als `maak_timelapse.bat`)
 
