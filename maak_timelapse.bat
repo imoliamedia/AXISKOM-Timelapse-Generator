@@ -4,27 +4,6 @@ chcp 65001 > nul
 color 0A
 title AXISKOM Timelapse Maker
 
-:: Vang Windows Defender-waarschuwingen op door FFmpeg vooraf te testen
-:: maar alleen als het nog niet eerder is gedaan
-if not exist "ffmpeg_getest.txt" (
-  echo Voorbereiden van FFmpeg om Windows Defender-waarschuwingen te voorkomen...
-  echo.
-  
-  :: Probeer eerst ffmpeg in een apart process te starten om waarschuwingen af te handelen
-  echo Als je een beveiligingswaarschuwing ziet, kies dan "Toch uitvoeren".
-  echo Wacht even terwijl we FFmpeg voorbereiden...
-  echo.
-  
-  start /wait "" "ffmpeg\bin\ffmpeg.exe" -version
-  
-  :: Markeer dat FFmpeg is getest
-  echo FFmpeg is getest op %date% %time% > ffmpeg_getest.txt
-  echo Voorbereiding voltooid.
-  echo.
-  echo Druk op een toets om verder te gaan...
-  pause > nul
-)
-
 :: Controleer of we in de juiste map zitten
 if not exist "ffmpeg\bin\ffmpeg.exe" (
   echo FOUT: FFmpeg niet gevonden. Zorg ervoor dat je dit script in de originele map uitvoert.
@@ -186,6 +165,7 @@ if %teller% equ 0 (
     echo FOUT: Geen JPG-bestanden gevonden in "%volledig_pad%"
     echo.
     pause
+    rd /s /q "temp_jpgs" 2>nul
     goto menu
 )
 
@@ -195,30 +175,37 @@ echo Timelapse wordt gemaakt met FFmpeg...
 echo.
 
 :: Gebruik een eenvoudigere FFmpeg-opdracht met image2 demuxer
-ffmpeg -y -framerate %fps% -i "temp_jpgs/img%%d.jpg" -c:v libx264 -crf %kwaliteit% -pix_fmt yuv420p "%uitvoermap%\%mapnaam%_timelapse.mp4" 2> ffmpeg_error.log
+ffmpeg -y -framerate %fps% -i "temp_jpgs/img%%d.jpg" -c:v libx264 -crf %kwaliteit% -pix_fmt yuv420p "%uitvoermap%\%mapnaam%_timelapse.mp4" > nul 2>&1
 
 :: Ruim de tijdelijke bestanden op
 echo Tijdelijke bestanden opruimen...
 rd /s /q "temp_jpgs" 2>nul
 
-if %errorlevel% equ 0 (
-  echo.
-  echo ╔══════════════════════════════════════════════════════════╗
-  echo ║                  TIMELAPSE VOLTOOID!                     ║
-  echo ╚══════════════════════════════════════════════════════════╝
-  echo.
-  echo  ✓ GELUKT! Je timelapse is klaar.
-  echo.
-  echo  De video is opgeslagen als: 
-  echo  %uitvoermap%\%mapnaam%_timelapse.mp4
-  echo.
-  
-  :: Vraag of gebruiker het bestand wil openen
-  set /p open_bestand=Wil je de timelapse nu openen? (j/n): 
-  if /i "%open_bestand%"=="j" (
-    start "" "%uitvoermap%\%mapnaam%_timelapse.mp4"
+:: Controleer of het bestand is aangemaakt en een grootte heeft
+if exist "%uitvoermap%\%mapnaam%_timelapse.mp4" (
+  for %%F in ("%uitvoermap%\%mapnaam%_timelapse.mp4") do set size=%%~zF
+  if !size! gtr 0 (
+    echo.
+    echo ╔══════════════════════════════════════════════════════════╗
+    echo ║                  TIMELAPSE VOLTOOID!                     ║
+    echo ╚══════════════════════════════════════════════════════════╝
+    echo.
+    echo  ✓ GELUKT! Je timelapse is klaar.
+    echo.
+    echo  De video is opgeslagen als: 
+    echo  %uitvoermap%\%mapnaam%_timelapse.mp4
+    echo.
+    
+    :: Vraag of gebruiker het bestand wil openen
+    set /p open_bestand=Wil je de timelapse nu openen? (j/n): 
+    if /i "%open_bestand%"=="j" (
+      start "" "%uitvoermap%\%mapnaam%_timelapse.mp4"
+    )
+  ) else (
+    goto error_handling
   )
 ) else (
+  :error_handling
   echo.
   echo ╔══════════════════════════════════════════════════════════╗
   echo ║                      FOUT!                               ║
@@ -227,8 +214,6 @@ if %errorlevel% equ 0 (
   echo  ✗ Er is helaas iets misgegaan bij het maken van de timelapse.
   echo  Controleer of er foto's (*.jpg) in de geselecteerde map staan.
   echo  Map: %volledig_pad%
-  echo.
-  echo  Een foutlog is opgeslagen als ffmpeg_error.log
   echo.
 )
 
