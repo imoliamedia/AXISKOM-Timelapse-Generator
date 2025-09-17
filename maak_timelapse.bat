@@ -82,6 +82,13 @@ if not exist "%volledig_pad%" (
   goto enkele_dag
 )
 
+:: SORTEER KEUZE
+echo  [1] Sorteer op bestandsnaam
+echo  [2] Sorteer op datum (aanbevolen)
+echo.
+set /p sorteer_keuze=Kies (1-2): 
+if "%sorteer_keuze%"=="" set sorteer_keuze=2
+
 :stap2_instellingen
 
 echo.
@@ -151,12 +158,20 @@ echo Foto's voorbereiden voor timelapse...
 :: Maak een tijdelijke map voor bewerkte bestanden als die nog niet bestaat
 if not exist "temp_jpgs" mkdir "temp_jpgs"
 
-:: Maak een lijst met alle bestanden in de bron map
+:: ORIGINELE CODE MET SORTEERKEUZE
 set "teller=0"
-for %%f in ("%volledig_pad%\*.jpg") do (
-    set /a "teller+=1"
-    echo Bestand !teller! voorbereiden: %%~nxf
-    copy "%%f" "temp_jpgs\img!teller!.jpg" > nul
+if "%sorteer_keuze%"=="1" (
+  for %%f in ("%volledig_pad%\*.jpg") do (
+      set /a "teller+=1"
+      echo Bestand !teller! voorbereiden: %%~nxf
+      copy "%%f" "temp_jpgs\img!teller!.jpg" > nul
+  )
+) else (
+  for /f "delims=" %%f in ('dir "%volledig_pad%\*.jpg" /b /od') do (
+      set /a "teller+=1"
+      echo Bestand !teller! voorbereiden: %%f
+      copy "%volledig_pad%\%%f" "temp_jpgs\img!teller!.jpg" > nul
+  )
 )
 
 if %teller% equ 0 (
