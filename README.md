@@ -159,6 +159,13 @@ De tool maakt gebruik van:
 
 ## Changelog
 
+### v2.1 (Fix)
+- ✅ **Opgelost**: "Sorteer op datum" gebruikte de Windows-bestandsdatum, die niet
+  meer klopt zodra foto's via de webinterface gedownload zijn (dan is dat de
+  downloaddatum, niet het opnamemoment). De tool leest de datum/tijd nu uit de
+  ESP32-CAM bestandsnaam zelf (`DD-MM-YYYY_HH-MM-SS.jpg`), wat altijd correct
+  is, ongeacht of je via de SD-kaart of de webinterface verzameld hebt.
+
 ### v2.0 (Nieuw)
 - ✅ **Toegevoegd**: Keuze tussen bestandsnaam en datum/tijd sortering
 - ✅ **Verbeterd**: Chronologisch correcte timelapses voor ESP32-CAM foto's  

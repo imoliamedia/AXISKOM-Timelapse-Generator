@@ -167,11 +167,33 @@ if "%sorteer_keuze%"=="1" (
       copy "%%f" "temp_jpgs\img!teller!.jpg" > nul
   )
 ) else (
-  for /f "delims=" %%f in ('dir "%volledig_pad%\*.jpg" /b /od') do (
-      set /a "teller+=1"
-      echo Bestand !teller! voorbereiden: %%f
-      copy "%volledig_pad%\%%f" "temp_jpgs\img!teller!.jpg" > nul
+  :: Sorteer op de datum/tijd die in de ESP32-CAM bestandsnaam zelf staat
+  :: (DD-MM-YYYY_HH-MM-SS.jpg), in plaats van op de Windows-bestandsdatum.
+  :: Die laatste klopt namelijk niet meer als de foto's via de webinterface
+  :: gedownload zijn: dan is de bestandsdatum het downloadmoment, niet het
+  :: opnamemoment, en sorteert "dir /od" dus verkeerd.
+  if exist "%temp%\axiskom_sort.txt" del "%temp%\axiskom_sort.txt"
+  for %%f in ("%volledig_pad%\*.jpg") do (
+      set "basisnaam=%%~nf"
+      set "sleutel=!basisnaam!"
+      if "!basisnaam:~2,1!"=="-" if "!basisnaam:~5,1!"=="-" if "!basisnaam:~10,1!"=="_" if "!basisnaam:~13,1!"=="-" if "!basisnaam:~16,1!"=="-" (
+          set "dd=!basisnaam:~0,2!"
+          set "mm=!basisnaam:~3,2!"
+          set "jjjj=!basisnaam:~6,4!"
+          set "hh=!basisnaam:~11,2!"
+          set "mi=!basisnaam:~14,2!"
+          set "ss=!basisnaam:~17,2!"
+          set "sleutel=!jjjj!!mm!!dd!!hh!!mi!!ss!"
+      )
+      echo !sleutel!^|%%~nxf>>"%temp%\axiskom_sort.txt"
   )
+  sort "%temp%\axiskom_sort.txt" > "%temp%\axiskom_sort_klaar.txt"
+  for /f "usebackq tokens=1,2 delims=|" %%A in ("%temp%\axiskom_sort_klaar.txt") do (
+      set /a "teller+=1"
+      echo Bestand !teller! voorbereiden: %%B
+      copy "%volledig_pad%\%%B" "temp_jpgs\img!teller!.jpg" > nul
+  )
+  del "%temp%\axiskom_sort.txt" "%temp%\axiskom_sort_klaar.txt" 2>nul
 )
 
 if %teller% equ 0 (
