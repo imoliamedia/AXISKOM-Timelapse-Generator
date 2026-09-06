@@ -42,7 +42,7 @@ De tool biedt nu twee sorteeropties om ervoor te zorgen dat je timelapse chronol
 
 ## Installatie
 
-1. Download de laatste release van de [Releases pagina](https://github.com/imoliamedia/AXISKOM-Timelapse-Generator/releases/tag/Release)
+1. Download de laatste release van de [Releases pagina](https://github.com/imoliamedia/AXISKOM-Timelapse-Generator/releases/latest)
 2. Pak het ZIP-bestand uit naar een locatie op je computer
 3. Zorg dat de mapstructuur intact blijft (de `ffmpeg` map moet op hetzelfde niveau staan als `maak_timelapse.bat`)
 
@@ -113,7 +113,7 @@ Door **datum en tijd sortering** te kiezen:
 ## Vereisten
 
 - Windows 10 of hoger
-- Ongeveer 100MB vrije ruimte (voor de tool)
+- Ongeveer 250MB vrije ruimte (voor de tool, vooral de meegeleverde FFmpeg-programma's)
 - Voldoende ruimte voor de timelapse video's (afhankelijk van kwaliteitsinstellingen)
 
 ## Veelgestelde vragen
