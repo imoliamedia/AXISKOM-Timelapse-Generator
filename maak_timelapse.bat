@@ -1,6 +1,6 @@
 :: Hoofdscript voor het maken van timelapses
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 chcp 65001 > nul
 color 0A
 title AXISKOM Timelapse Maker
@@ -13,8 +13,9 @@ if not exist "ffmpeg\bin\ffmpeg.exe" (
   exit /b
 )
 
-:: Zorg ervoor dat we werken met vertraagde variabele-expansie voor loops
-setlocal EnableDelayedExpansion
+:: PATH wordt hier eenmalig ingesteld voor de hele sessie (niet steeds opnieuw
+:: bij elke timelapse, dat liet PATH bij herhaald gebruik onnodig aangroeien)
+SET "PATH=%~dp0ffmpeg\bin;%PATH%"
 
 :menu
 cls
@@ -48,9 +49,6 @@ echo  Deze kunnen via de webinterface gedownload zijn of van de SD-kaart.
 echo.
 echo  Er wordt nu een mapkeuze-venster geopend...
 echo.
-
-:: Stel eerst PATH in voor betere werking
-SET PATH=%~dp0ffmpeg\bin;%PATH%
 
 :: Gebruik VBScript voor betere compatibiliteit
 echo Set objShell = CreateObject("Shell.Application") > "%temp%\folderdialog.vbs"
@@ -86,8 +84,13 @@ if not exist "%volledig_pad%" (
 echo  [1] Sorteer op bestandsnaam
 echo  [2] Sorteer op datum (aanbevolen)
 echo.
-set /p sorteer_keuze=Kies (1-2): 
-if "%sorteer_keuze%"=="" set sorteer_keuze=2
+:sorteer_keuze_vraag
+set /p sorteer_keuze=Kies (1-2):
+if "%sorteer_keuze%"=="" set "sorteer_keuze=2"
+if not "%sorteer_keuze%"=="1" if not "%sorteer_keuze%"=="2" (
+  echo  Ongeldige keuze, kies 1 of 2.
+  goto sorteer_keuze_vraag
+)
 
 :stap2_instellingen
 
@@ -106,8 +109,19 @@ echo   - 15 fps: Goede balans tussen vloeiendheid en lengte
 echo   - 10 fps: Langere, maar minder vloeiende timelapse
 echo.
 
-set /p fps=Kies framerate (10-30, standaard is 30): 
-if "%fps%"=="" set fps=30
+:fps_vraag
+set /p fps=Kies framerate (10-30, standaard is 30):
+if "%fps%"=="" set "fps=30"
+set "fps_ongeldig="
+for /f "delims=0123456789" %%c in ("%fps%") do set "fps_ongeldig=1"
+if defined fps_ongeldig (
+  echo  Ongeldige invoer: gebruik een heel getal.
+  goto fps_vraag
+)
+if %fps% lss 1 (
+  echo  Framerate moet minimaal 1 zijn.
+  goto fps_vraag
+)
 
 echo.
 echo  STAP 3: Videokwaliteit
@@ -121,8 +135,19 @@ echo   - 23: Kleinere bestanden met redelijke kwaliteit
 echo   - 28: Kleinste bestanden, maar lagere kwaliteit
 echo.
 
-set /p kwaliteit=Kies kwaliteit (18-28, standaard is 18): 
-if "%kwaliteit%"=="" set kwaliteit=18
+:kwaliteit_vraag
+set /p kwaliteit=Kies kwaliteit (18-28, standaard is 18):
+if "%kwaliteit%"=="" set "kwaliteit=18"
+set "kwaliteit_ongeldig="
+for /f "delims=0123456789" %%c in ("%kwaliteit%") do set "kwaliteit_ongeldig=1"
+if defined kwaliteit_ongeldig (
+  echo  Ongeldige invoer: gebruik een heel getal tussen 0 en 51.
+  goto kwaliteit_vraag
+)
+if %kwaliteit% gtr 51 (
+  echo  Kwaliteit moet tussen 0 en 51 liggen.
+  goto kwaliteit_vraag
+)
 
 cls
 echo ╔══════════════════════════════════════════════════════════╗
@@ -148,23 +173,35 @@ echo  Dit kan enkele minuten duren, afhankelijk van het aantal foto's.
 echo  SLUIT DIT VENSTER NIET AF!
 echo.
 
-:: Stel PATH tijdelijk in zodat FFmpeg beschikbaar is (nogmaals voor de zekerheid)
-SET PATH=%~dp0ffmpeg\bin;%PATH%
-
-:: Gebruik een simpelere aanpak - verwerk één bestand per keer
+:: Foto's worden NIET meer gekopieerd naar een tijdelijke map: in plaats
+:: daarvan bouwen we een FFmpeg concat-lijst die in de juiste volgorde
+:: rechtstreeks naar de originele bestanden verwijst. Dat is sneller,
+:: gebruikt geen dubbele schijfruimte en laat niks achter voor de volgende
+:: run (een oude, halfvolle tijdelijke map kon anders stiekem oude foto's
+:: aan het eind van een nieuwe timelapse plakken).
 echo.
-echo Foto's voorbereiden voor timelapse...
+echo Foto's sorteren...
 
-:: Maak een tijdelijke map voor bewerkte bestanden als die nog niet bestaat
-if not exist "temp_jpgs" mkdir "temp_jpgs"
+set "lijstbestand=%temp%\axiskom_concat_%random%.txt"
+if exist "%lijstbestand%" del "%lijstbestand%"
+set "veiligpad=%volledig_pad:\=/%"
 
-:: ORIGINELE CODE MET SORTEERKEUZE
+:: Duur per foto in seconden, met microseconde-precisie (bv. 30 fps -> 0.033333)
+set /a "duur_micro=1000000/%fps%"
+set "duur_pad=00000%duur_micro%"
+set "duur=0.%duur_pad:~-6%"
+
 set "teller=0"
+set "laatste_bestand="
+
 if "%sorteer_keuze%"=="1" (
-  for %%f in ("%volledig_pad%\*.jpg") do (
+  for /f "delims=" %%f in ('dir /b /on "%volledig_pad%\*.jpg" 2^>nul') do (
       set /a "teller+=1"
-      echo Bestand !teller! voorbereiden: %%~nxf
-      copy "%%f" "temp_jpgs\img!teller!.jpg" > nul
+      set "laatste_bestand=%%f"
+      echo file '!veiligpad!/%%f'>>"!lijstbestand!"
+      echo duration !duur!>>"!lijstbestand!"
+      set /a "voortgang=!teller! %% 100"
+      if !voortgang! equ 0 echo   ...!teller! foto's verwerkt
   )
 ) else (
   :: Sorteer op de datum/tijd die in de ESP32-CAM bestandsnaam zelf staat
@@ -172,7 +209,8 @@ if "%sorteer_keuze%"=="1" (
   :: Die laatste klopt namelijk niet meer als de foto's via de webinterface
   :: gedownload zijn: dan is de bestandsdatum het downloadmoment, niet het
   :: opnamemoment, en sorteert "dir /od" dus verkeerd.
-  if exist "%temp%\axiskom_sort.txt" del "%temp%\axiskom_sort.txt"
+  set "sorteerbestand=%temp%\axiskom_sort_%random%.txt"
+  if exist "%sorteerbestand%" del "%sorteerbestand%"
   for %%f in ("%volledig_pad%\*.jpg") do (
       set "basisnaam=%%~nf"
       set "sleutel=!basisnaam!"
@@ -185,15 +223,20 @@ if "%sorteer_keuze%"=="1" (
           set "ss=!basisnaam:~17,2!"
           set "sleutel=!jjjj!!mm!!dd!!hh!!mi!!ss!"
       )
-      echo !sleutel!^|%%~nxf>>"%temp%\axiskom_sort.txt"
+      echo !sleutel!^|%%~nxf>>"!sorteerbestand!"
   )
-  sort "%temp%\axiskom_sort.txt" > "%temp%\axiskom_sort_klaar.txt"
-  for /f "usebackq tokens=1,2 delims=|" %%A in ("%temp%\axiskom_sort_klaar.txt") do (
-      set /a "teller+=1"
-      echo Bestand !teller! voorbereiden: %%B
-      copy "%volledig_pad%\%%B" "temp_jpgs\img!teller!.jpg" > nul
+  if exist "%sorteerbestand%" (
+      sort "%sorteerbestand%" > "%sorteerbestand%.sorted"
+      for /f "usebackq tokens=1,2 delims=|" %%A in ("%sorteerbestand%.sorted") do (
+          set /a "teller+=1"
+          set "laatste_bestand=%%B"
+          echo file '!veiligpad!/%%B'>>"!lijstbestand!"
+          echo duration !duur!>>"!lijstbestand!"
+          set /a "voortgang=!teller! %% 100"
+          if !voortgang! equ 0 echo   ...!teller! foto's verwerkt
+      )
   )
-  del "%temp%\axiskom_sort.txt" "%temp%\axiskom_sort_klaar.txt" 2>nul
+  del "%sorteerbestand%" "%sorteerbestand%.sorted" 2>nul
 )
 
 if %teller% equ 0 (
@@ -201,21 +244,24 @@ if %teller% equ 0 (
     echo FOUT: Geen JPG-bestanden gevonden in "%volledig_pad%"
     echo.
     pause
-    rd /s /q "temp_jpgs" 2>nul
+    del "%lijstbestand%" 2>nul
     goto menu
 )
 
+:: FFmpeg's concat-demuxer negeert de duration van de allerlaatste regel;
+:: de laatste foto daarom nog eenmaal toevoegen (bekende, gangbare workaround)
+if defined laatste_bestand echo file '%veiligpad%/%laatste_bestand%'>>"%lijstbestand%"
+
 echo.
-echo %teller% foto's gevonden en voorbereid.
+echo %teller% foto's gevonden.
 echo Timelapse wordt gemaakt met FFmpeg...
 echo.
 
-:: Gebruik een eenvoudigere FFmpeg-opdracht met image2 demuxer
-ffmpeg -y -framerate %fps% -i "temp_jpgs/img%%d.jpg" -c:v libx264 -crf %kwaliteit% -pix_fmt yuv420p "%uitvoermap%\%mapnaam%_timelapse.mp4" > nul 2>&1
+set "ffmpeglog=%temp%\axiskom_ffmpeg_log.txt"
+ffmpeg -y -f concat -safe 0 -i "%lijstbestand%" -vsync cfr -r %fps% -c:v libx264 -crf %kwaliteit% -pix_fmt yuv420p "%uitvoermap%\%mapnaam%_timelapse.mp4" > "%ffmpeglog%" 2>&1
 
-:: Ruim de tijdelijke bestanden op
-echo Tijdelijke bestanden opruimen...
-rd /s /q "temp_jpgs" 2>nul
+:: Ruim de tijdelijke lijst op
+del "%lijstbestand%" 2>nul
 
 :: Controleer of het bestand is aangemaakt en een grootte heeft
 if exist "%uitvoermap%\%mapnaam%_timelapse.mp4" (
@@ -262,6 +308,11 @@ echo  ✗ Er is helaas iets misgegaan bij het maken van de timelapse.
 echo  Controleer of er foto's (*.jpg) in de geselecteerde map staan.
 echo  Map: %volledig_pad%
 echo.
+if exist "%ffmpeglog%" (
+  echo  Technische details ^(FFmpeg-foutmelding^) zijn opgeslagen in:
+  echo  %ffmpeglog%
+  echo.
+)
 
 echo  Druk op een toets om terug te gaan naar het hoofdmenu...
 pause > nul
@@ -295,6 +346,8 @@ echo  - Controleer of de mapnaam correct is (let op hoofdletters)
 echo  - Zorg dat de map JPG-foto's bevat
 echo  - Zorg dat je voldoende vrije ruimte hebt op je schijf
 echo  - Zorg dat je het programma uit de originele map uitvoert
+echo  - Bekijk bij een foutmelding het genoemde logbestand voor de exacte
+echo    FFmpeg-foutmelding
 echo.
 echo  Vraag: Ik krijg een Windows Defender-waarschuwing, wat nu?
 echo  -------------------------------------------------------

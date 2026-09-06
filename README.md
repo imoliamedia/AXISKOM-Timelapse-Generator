@@ -149,15 +149,24 @@ Ja! Dit is waar de datum-sortering echt uitblinkt:
 ### Mijn timelapse springt heen en weer in tijd, wat nu?
 Dit probleem wordt opgelost door **datum en tijd sortering** te gebruiken in plaats van bestandsnaam sortering.
 
+### Er is iets misgegaan, hoe vind ik de oorzaak?
+Bij een foutmelding toont het script het pad naar een logbestand met de exacte FFmpeg-foutmelding. Open dat bestand in Kladblok voor de technische details.
+
 ## Technische details
 
 De tool maakt gebruik van:
-- FFmpeg voor videoconversie en encodering
+- FFmpeg voor videoconversie en encodering (via een concat-lijst, zonder tussentijdse bestandskopieën)
 - Windows batch scripting voor gebruikersinterface en bestandsverwerking
 - H.264 videocodec voor optimale compatibiliteit
-- Datum-gebaseerde sortering via Windows DIR commando's
+- Datum-gebaseerde sortering via de timestamp in de ESP32-CAM bestandsnaam zelf
 
 ## Changelog
+
+### v2.2 (Verbeteringen)
+- ✅ **Sneller en zuiniger**: foto's worden niet meer gekopieerd naar een tijdelijke map, FFmpeg leest ze nu rechtstreeks in de juiste volgorde in
+- ✅ **Opgelost**: een oude, onvolledig opgeruimde tijdelijke map kon soms foto's van een vorige run laten meeliften in een nieuwe timelapse
+- ✅ **Duidelijkere meldingen**: ongeldige invoer bij sorteerkeuze, framerate of kwaliteit wordt nu direct herkend in plaats van pas te falen bij het maken van de video
+- ✅ **Beter te debuggen**: bij een fout wordt de echte FFmpeg-foutmelding weggeschreven naar een logbestand in plaats van verborgen
 
 ### v2.1 (Fix)
 - ✅ **Opgelost**: "Sorteer op datum" gebruikte de Windows-bestandsdatum, die niet
